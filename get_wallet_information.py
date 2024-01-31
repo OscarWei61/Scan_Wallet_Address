@@ -7,7 +7,6 @@ from selenium.webdriver import Firefox
 from selenium import webdriver
 import requests
 import os
-from tqdm import tqdm
 
 from bs4 import BeautifulSoup
 import time
@@ -67,8 +66,8 @@ def DeFi_Swap_information_find(soup):
 
         # 提取金額文本
         amount_text = amount_element.text.strip()
-    
-    print("DeFi_Swap_div", string_process(amount_text))
+        return string_process(amount_text)
+        print("DeFi_Swap_div", string_process(amount_text))
 
 def lido_information_find(soup):
     # 找到id為'lido'的元素
@@ -132,7 +131,7 @@ def store_to_csv(address_list, wallet_total_value_list, eth_amount_list, eth_val
     data = {'Address': address_list, 'Wallet Total Value': wallet_total_value_list, 'Update Time': "2024/01/31", 'ETH Amount': eth_amount_list, 'ETH Value': eth_value_list, 'Spot Value': spot_value_list, 'Lido Value': lido_value_list, 'DeFi Swap Value': defi_swap_value_list}
     df = pd.DataFrame(data)
     # 将 'Age' 列转换为整数类型
-    df['Wallet Total Value'] = df['Wallet Total Value'].astype(int)
+    df['Wallet Total Value'] = df['Wallet Total Value'].astype(float)
     df_sorted_by_price = df.sort_values(by='Wallet Total Value', ascending=False)
     # 保存為 CSV 文件
     df_sorted_by_price.to_csv('wallet_information_total.csv', index=False)
