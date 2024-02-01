@@ -7,6 +7,7 @@ from selenium.webdriver import Firefox
 from selenium import webdriver
 import requests
 import os
+from tqdm import tqdm
 
 from bs4 import BeautifulSoup
 import time
@@ -66,8 +67,8 @@ def DeFi_Swap_information_find(soup):
 
         # 提取金額文本
         amount_text = amount_element.text.strip()
-        return string_process(amount_text)
-        print("DeFi_Swap_div", string_process(amount_text))
+    
+    print("DeFi_Swap_div", string_process(amount_text))
 
 def lido_information_find(soup):
     # 找到id為'lido'的元素
@@ -104,20 +105,31 @@ def wallet_information_find(soup):
         return string_process(amount_text)
     print("wallet", string_process(amount_text))
 
-def check_address_volume(address):
-    #address = "0x964dc6ce8c35d93f9861e498898e76f27f2a882c"
+def get_web_information(address):
     web = 'https://debank.com/profile/' + str(address)
-    #print("Link :", web)
     driver.get(web)
     driver.maximize_window()
     sleep_time = random.uniform(1, 10)
     time.sleep(sleep_time)
-    
     # 取得目前頁面的 HTML Code
     current_code = driver.page_source
-
     # 使用 BeautifulSoup 解析 HTML
     soup = BeautifulSoup(current_code, 'html.parser')
+
+    return soup
+
+def check_load(soup, address):
+    if soup.find('div', {'id': 'Wallet'}) == None:
+        print("Reload web")
+        soup = get_web_information(address)
+    return soup
+
+def check_address_volume(address):
+    #address = "0x964dc6ce8c35d93f9861e498898e76f27f2a882c"
+    
+    soup = get_web_information(address)
+    soup = check_load(soup, address)
+    
 
     wallet_total_value, eth_amount, eth_value = total_wallet_information_find(soup)
     spot_value = wallet_information_find(soup)
@@ -128,14 +140,15 @@ def check_address_volume(address):
 
 def store_to_csv(address_list, wallet_total_value_list, eth_amount_list, eth_value_list, spot_value_list, lido_value_list, defi_swap_value_list):
     # 轉換為 Pandas DataFrame
-    data = {'Address': address_list, 'Wallet Total Value': wallet_total_value_list, 'Update Time': "2024/01/31", 'ETH Amount': eth_amount_list, 'ETH Value': eth_value_list, 'Spot Value': spot_value_list, 'Lido Value': lido_value_list, 'DeFi Swap Value': defi_swap_value_list}
+    today_date = "2024/02/01"
+    data = {'Address': address_list, 'Wallet Total Value': wallet_total_value_list, 'Update Time': today_date, 'ETH Amount': eth_amount_list, 'ETH Value': eth_value_list, 'Spot Value': spot_value_list, 'Lido Value': lido_value_list, 'DeFi Swap Value': defi_swap_value_list}
     df = pd.DataFrame(data)
     # 将 'Age' 列转换为整数类型
     df['Wallet Total Value'] = df['Wallet Total Value'].astype(float)
     df_sorted_by_price = df.sort_values(by='Wallet Total Value', ascending=False)
     # 保存為 CSV 文件
-    df_sorted_by_price.to_csv('wallet_information_total.csv', index=False)
-    df_sorted_by_price.head(30).to_csv('wallet_information_top30.csv', index=False)
+    df_sorted_by_price.to_csv('wallet_information_total_20240201.csv', index=False)
+    df_sorted_by_price.head(30).to_csv('wallet_information_top30_20240201.csv', index=False)
 
     del df
     del df_sorted_by_price
@@ -153,9 +166,9 @@ file_path = './solid_wallet_address.txt'  # 請替換成實際的檔案路徑
 
 check_address_number = 0
 
-if os.path.exists('./wallet_information_total.csv'):
+if os.path.exists('./wallet_information_total_20240201.csv'):
     # 读取CSV文件
-    df = pd.read_csv('./wallet_information_total.csv')
+    df = pd.read_csv('./wallet_information_total_20240201.csv')
 
     # 提取 'Address' 列并转换为列表
     wallet_address_list = df['Address'].tolist()
